@@ -1222,7 +1222,7 @@ export default function App() {
     || HARDWARE_PROFILES.ARDUINO_NANO_L298N;
 
   const [simulatorHeight, setSimulatorHeight] =
-    useState(360);
+    useState(300);
 
   // Ẩn/hiện các khu vực giao diện; nhớ lựa chọn cho lần mở sau.
   const [hiddenPanels, setHiddenPanels] = useState(() => {

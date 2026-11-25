@@ -156,15 +156,12 @@ body,
 
   min-height: 0;
 
-  /* Khi bật đủ các vùng mà màn hình thấp: cuộn dọc thay vì ép vùng lập trình
-     nhỏ lại làm che nút phóng to/thu nhỏ/thùng rác của Blockly. */
+  /* Màn hình thấp: cuộn dọc để vẫn thấy khung mô phỏng. */
   overflow-x: hidden;
   overflow-y: auto;
 
   display: flex;
   flex-direction: column;
-
-  overflow: hidden;
 
   background: #e2e8f0;
 }
@@ -175,11 +172,12 @@ body,
 ========================================================= */
 
 .top-workspace {
-  flex: 1 0 auto;
+  flex: 1 1 0;
+  height: 0;
 
   /* tiêu đề 54px + thanh trợ lý + >= 330px cho Blockly (đủ chỗ cho
      cụm zoom + thùng rác ở góc phải dưới) */
-  min-height: 470px;
+  min-height: 340px;
 
   display: flex;
 
@@ -354,9 +352,9 @@ button:active {
 ========================================================= */
 
 .blockly-host {
-  flex: 1;
+  flex: 1 1 0;
 
-  min-height: 330px;
+  min-height: 200px;
 
   width: 100%;
 
@@ -1480,3 +1478,15 @@ Blockly đôi khi tạo SVG lớn hơn vùng chứa.
 
 /* Khi vùng lập trình và mã đều bị ẩn, mô phỏng chiếm toàn bộ chiều cao */
 .simulator-panel.simulator-panel-fill { flex: 1; height: auto; max-height: none; }
+
+
+/* =========================================================
+   SỬA BỐ CỤC: giữ thanh công cụ + khung mô phỏng ổn định
+========================================================= */
+.top-workspace > .workspace-panel,
+.top-workspace > .code-panel { min-height: 0; }
+.code-panel > .code { flex: 1 1 0; min-height: 0; overflow: auto; }
+.workspace-panel > .blockly-host { height: auto; }
+.simulator-panel { flex: 0 0 auto; min-height: 200px; }
+.simulator-resizer { flex: 0 0 8px; }
+.footer { flex-shrink: 0; }
