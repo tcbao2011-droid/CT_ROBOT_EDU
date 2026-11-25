@@ -24,3 +24,11 @@ export const FIRST_FLASH_STEPS = {
     "Chọn cổng ST-LINK Virtual COM Port trong nút \"Nạp nhanh\".",
   ],
 };
+
+/* ESP32 / ESP32-S3 dùng MicroPython: nạp firmware MicroPython một lần bằng công cụ web, sau đó nạp chương trình từ phần mềm. */
+export const ESP32_FIRST_FLASH_STEPS = [
+  "ESP32 cần firmware MicroPython (chỉ làm một lần cho mỗi mạch). Tải file .bin mới nhất tại micropython.org/download/ESP32_GENERIC/ (ESP32-S3: ESP32_GENERIC_S3).",
+  "Mở công cụ nạp trên web (Chrome/Edge): adafruit.github.io/Adafruit_WebSerial_ESPTool hoặc web.esphome.io, bấm Connect và chọn cổng của mạch.",
+  "Nạp file .bin đã tải vào địa chỉ 0x1000 (ESP32) hoặc 0x0 (ESP32-S3). Nếu mạch không vào được chế độ nạp: giữ nút BOOT, bấm RESET rồi nhả BOOT.",
+  "Bấm RESET trên mạch. Sau đó quay lại đây và bấm \"Nạp nhanh\" để nạp chương trình.",
+];

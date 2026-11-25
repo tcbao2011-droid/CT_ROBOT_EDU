@@ -153,3 +153,9 @@ Chân của firmware được sinh tự động từ khai báo mạch (`firmware
 
 Kiểm thử: `node --test` chạy bytecode do JS sinh ra bằng chính bộ thông dịch C++ của firmware (biên dịch bằng g++ trên máy tính)
 và kiểm thử giao thức nạp đầu-cuối. Phần điều khiển phần cứng thật (`firmware/common/ct_stm32_main.h`) chưa thử trên mạch.
+
+### ⚡ Nạp nhanh cho ESP32 / ESP32-S3 (MicroPython)
+
+ESP32 dùng MicroPython: nút **⚡ Nạp nhanh** sinh mã Python (đã gồm runtime) và ghi thành `main.py` trong bộ nhớ mạch qua Web Serial
+(raw REPL), rồi khởi động lại mềm; mạch tự chạy lại mỗi lần bật nguồn. Mạch cần có firmware MicroPython (nút **📥 Firmware lần đầu**
+hướng dẫn nạp bằng công cụ web, chỉ một lần). Giao thức nạp đã được kiểm thử với mạch giả (`tests/micropythonUpload.test.js`); chưa thử trên ESP32 thật.

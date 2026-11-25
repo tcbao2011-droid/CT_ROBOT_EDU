@@ -20,7 +20,8 @@ import "./App.css";
 import RobotSimulator from "./RobotSimulator";
 import { compileWorkspace as compileQuickProgram, BOARD_IDS as QUICK_BOARD_IDS } from "./firmware/bytecode.js";
 import { openWebSerial, uploadPackage as uploadQuickProgram, webSerialSupported } from "./firmware/serialUploader.js";
-import { FIRMWARE_FILES, FIRST_FLASH_STEPS } from "./firmware/firstFlash.js";
+import { FIRMWARE_FILES, FIRST_FLASH_STEPS, ESP32_FIRST_FLASH_STEPS } from "./firmware/firstFlash.js";
+import { uploadMainPy } from "./firmware/micropythonUploader.js";
 import { uploadViaServer } from "./uploadServer.js";
 import { compileSketch } from "./compiler.js";
 import CompileLog from "./CompileLog";
@@ -1376,7 +1377,8 @@ export default function App() {
 
   /* ---------- Nạp nhanh (STM32): bytecode qua Web Serial, không cần biên dịch / máy chủ ---------- */
 
-  const quickUploadSupported = Boolean(QUICK_BOARD_IDS[selectedProfile?.id]);
+  const isEsp32 = selectedProfile?.platform === "esp32";
+  const quickUploadSupported = Boolean(QUICK_BOARD_IDS[selectedProfile?.id]) || isEsp32;
 
   const handleQuickUpload = async () => {
     if (!workspace) return;
@@ -1385,6 +1387,23 @@ export default function App() {
     const addLog = line => setLogLines(prev => [...prev, line]);
     addLog(`▶ Nạp nhanh cho ${selectedProfile.name} (không cần biên dịch)`);
     try {
+      if (isEsp32) {
+        // ESP32: sinh mã MicroPython rồi ghi main.py vào mạch qua Web Serial (raw REPL).
+        const py = buildCodeOutput(workspace, hardwareConfig, "python").code;
+        if (!py || py.startsWith("# Python (MicroPython)")) throw new Error("Chưa có chương trình hợp lệ để nạp.");
+        if (!webSerialSupported()) throw new Error("Trình duyệt không hỗ trợ Web Serial. Hãy dùng Chrome hoặc Edge trên máy tính.");
+        setStatus("🔌 Chọn cổng của mạch trong hộp thoại của trình duyệt...");
+        const link = await openWebSerial();
+        try {
+          await new Promise(r => setTimeout(r, 1500)); // mở cổng có thể làm ESP32 khởi động lại
+          await uploadMainPy(link, py, { onLog: addLog });
+        } finally {
+          await link.close();
+        }
+        addLog("✅ Nạp thành công");
+        setStatus(`✅ Đã nạp vào ${selectedProfile.name}; robot chạy ngay và tự chạy lại mỗi khi bật nguồn`);
+        return;
+      }
       const result = compileQuickProgram(workspace, { profileId: selectedProfile.id });
       result.warnings.forEach(w => addLog(`⚠ ${w}`));
       if (!result.ok) {
@@ -1417,6 +1436,13 @@ export default function App() {
 
   const handleFirstFlashGuide = async () => {
     const id = selectedProfile?.id;
+    if (selectedProfile?.platform === "esp32") {
+      setLogLines([
+        `▶ Chuẩn bị ${selectedProfile.name} (chỉ làm một lần cho mỗi mạch):`,
+        ...ESP32_FIRST_FLASH_STEPS.map((step, i) => `${i + 1}. ${step}`),
+      ]);
+      return;
+    }
     const key = FIRMWARE_FILES[id];
     if (!key) return;
     setLogLines([
@@ -2246,7 +2272,7 @@ export default function App() {
             {compiling ? "⏳ Đang biên dịch..." : "🧩 Chỉ biên dịch"}
           </button>
 
-          {quickUploadSupported && codeLanguage !== "python" && (
+          {quickUploadSupported && (isEsp32 || codeLanguage !== "python") && (
             <>
               <button
                 className="secondary"
