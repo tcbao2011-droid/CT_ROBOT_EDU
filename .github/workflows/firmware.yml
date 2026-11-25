@@ -1,0 +1,39 @@
+name: Build firmware
+
+# Biên dịch firmware thông dịch cho 3 mạch STM32 trên máy chủ GitHub (không cần cài gì trên máy bạn).
+# Chạy tay: tab Actions -> Build firmware -> Run workflow. Kết quả: artifact "ct-firmware" chứa 3 file .bin.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: arduino/setup-arduino-cli@v2
+
+      - name: Cài core STM32duino 3.1.0
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+          arduino-cli core update-index
+          arduino-cli core install STMicroelectronics:stm32@3.1.0
+
+      - name: Cài gói npm
+        run: npm install
+
+      - name: Kiểm thử
+        run: node --test
+
+      - name: Biên dịch firmware cho cả 3 mạch
+        run: node firmware/build.mjs all
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ct-firmware
+          path: public/firmware/*.bin
