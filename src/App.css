@@ -156,6 +156,11 @@ body,
 
   min-height: 0;
 
+  /* Khi bật đủ các vùng mà màn hình thấp: cuộn dọc thay vì ép vùng lập trình
+     nhỏ lại làm che nút phóng to/thu nhỏ/thùng rác của Blockly. */
+  overflow-x: hidden;
+  overflow-y: auto;
+
   display: flex;
   flex-direction: column;
 
@@ -170,9 +175,11 @@ body,
 ========================================================= */
 
 .top-workspace {
-  flex: 1;
+  flex: 1 0 auto;
 
-  min-height: 300px;
+  /* tiêu đề 54px + thanh trợ lý + >= 330px cho Blockly (đủ chỗ cho
+     cụm zoom + thùng rác ở góc phải dưới) */
+  min-height: 470px;
 
   display: flex;
 
@@ -349,7 +356,7 @@ button:active {
 .blockly-host {
   flex: 1;
 
-  min-height: 0;
+  min-height: 330px;
 
   width: 100%;
 
@@ -477,6 +484,8 @@ Blockly đôi khi tạo SVG lớn hơn vùng chứa.
 
 .simulator-panel {
   height: 360px;
+
+  flex-shrink: 0;
 
   min-height: 220px;
 

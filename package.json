@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test",
+    "firmware:build": "node firmware/build.mjs all"
   },
   "dependencies": {
     "blockly": "^11.2.2",

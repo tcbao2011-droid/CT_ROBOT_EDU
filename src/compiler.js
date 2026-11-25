@@ -1,3 +1,5 @@
+import { resolveApiBase } from "./apiBase.js";
+
 /* =====================================================
    BIÊN DỊCH SKETCH QUA SERVER CỤC BỘ (Vite dev middleware)
    Giao thức NDJSON có thể chia một bản tin thành nhiều chunk;
@@ -73,15 +75,16 @@ export async function compileSketch(code, onLog, fqbn) {
   }
   if (!fqbn) throw new Error("Chưa chọn cấu hình board/FQBN để biên dịch.");
 
+  const base = await resolveApiBase();
   let response;
   try {
-    response = await fetch("/api/compile", {
+    response = await fetch(`${base}/api/compile`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, fqbn }),
     });
   } catch (_) {
-    throw new Error("Không kết nối được máy chủ biên dịch. Hãy chạy `npm run dev`.");
+    throw new Error("Không kết nối được máy chủ biên dịch. Hãy chạy lại cầu nối (CHAY_CAU_NOI) hoặc `npm run dev`.");
   }
 
   return readBuildResponse(response, onLog, { requireArtifact: true });

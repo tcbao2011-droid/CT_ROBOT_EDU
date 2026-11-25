@@ -18,6 +18,9 @@ import { evaluateProgramValue, runProgramStatement, isProgramValueType, isProgra
 import { filterToolbox, getExtensionToolboxCategories, setActiveExtensionProfile } from "./extensions";
 import "./App.css";
 import RobotSimulator from "./RobotSimulator";
+import { compileWorkspace as compileQuickProgram, BOARD_IDS as QUICK_BOARD_IDS } from "./firmware/bytecode.js";
+import { openWebSerial, uploadPackage as uploadQuickProgram, webSerialSupported } from "./firmware/serialUploader.js";
+import { FIRMWARE_FILES, FIRST_FLASH_STEPS } from "./firmware/firstFlash.js";
 import { uploadViaServer } from "./uploadServer.js";
 import { compileSketch } from "./compiler.js";
 import CompileLog from "./CompileLog";
@@ -1002,6 +1005,9 @@ function BlocklyWorkspace({
           trashcan: true,
           scrollbars: true,
           sounds: false,
+          // Nạp sprite (thùng rác, phóng to/thu nhỏ...) từ file đi kèm thay vì
+          // mặc định blockly-demo.appspot.com -> không bị vỡ texture khi offline.
+          media: `${import.meta.env.BASE_URL}blockly-media/`,
           renderer: COMPACT_RENDERER,
 
           grid: {
@@ -1365,6 +1371,70 @@ export default function App() {
       setStatus(`❌ ${msg}`);
     } finally {
       setCompiling(false);
+    }
+  };
+
+  /* ---------- Nạp nhanh (STM32): bytecode qua Web Serial, không cần biên dịch / máy chủ ---------- */
+
+  const quickUploadSupported = Boolean(QUICK_BOARD_IDS[selectedProfile?.id]);
+
+  const handleQuickUpload = async () => {
+    if (!workspace) return;
+    setUploading(true);
+    setLogLines([]);
+    const addLog = line => setLogLines(prev => [...prev, line]);
+    addLog(`▶ Nạp nhanh cho ${selectedProfile.name} (không cần biên dịch)`);
+    try {
+      const result = compileQuickProgram(workspace, { profileId: selectedProfile.id });
+      result.warnings.forEach(w => addLog(`⚠ ${w}`));
+      if (!result.ok) {
+        result.errors.forEach(e => addLog(`❌ ${e.message}`));
+        const first = result.errors.find(e => e.blockId && workspace.getBlockById(e.blockId));
+        if (first) {
+          try { Blockly.common.setSelected(workspace.getBlockById(first.blockId)); workspace.centerOnBlock(first.blockId); } catch (_) {}
+        }
+        throw new Error(result.errors[0].message);
+      }
+      addLog(`✔ Chương trình ${result.stats.bytes}/${result.stats.limit} byte`);
+      if (!webSerialSupported()) throw new Error("Trình duyệt không hỗ trợ Web Serial. Hãy dùng Chrome hoặc Edge trên máy tính.");
+      setStatus("🔌 Chọn cổng của mạch trong hộp thoại của trình duyệt...");
+      const link = await openWebSerial();
+      try {
+        await uploadQuickProgram(link, result.package, { onLog: addLog });
+      } finally {
+        await link.close();
+      }
+      addLog("✅ Nạp thành công");
+      setStatus(`✅ Đã nạp vào ${selectedProfile.name}; robot chạy ngay và tự chạy lại mỗi khi bật nguồn`);
+    } catch (error) {
+      const msg = error?.name === "NotFoundError" ? "Bạn chưa chọn cổng nào." : (error?.message || String(error));
+      addLog(`❌ ${msg}`);
+      setStatus(`❌ ${msg}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFirstFlashGuide = async () => {
+    const id = selectedProfile?.id;
+    const key = FIRMWARE_FILES[id];
+    if (!key) return;
+    setLogLines([
+      `▶ Nạp firmware lần đầu cho ${selectedProfile.name} (chỉ làm một lần cho mỗi mạch):`,
+      ...FIRST_FLASH_STEPS[id].map((step, i) => `${i + 1}. ${step}`),
+    ]);
+    try {
+      const url = `${import.meta.env.BASE_URL}firmware/${key}.bin`;
+      const response = await fetch(url, { method: "HEAD" });
+      const type = response.headers.get("content-type") || "";
+      if (!response.ok || type.includes("text/html")) throw new Error("missing");
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${key}.bin`;
+      link.click();
+      setLogLines(prev => [...prev, `⬇ Đã tải ${key}.bin`]);
+    } catch (_) {
+      setLogLines(prev => [...prev, `⚠ Chưa có file firmware ${key}.bin trên trang này. Người triển khai cần chạy: node firmware/build.mjs ${key} rồi đưa lại lên Netlify.`]);
     }
   };
 
@@ -2176,8 +2246,29 @@ export default function App() {
             {compiling ? "⏳ Đang biên dịch..." : "🧩 Chỉ biên dịch"}
           </button>
 
+          {quickUploadSupported && codeLanguage !== "python" && (
+            <>
+              <button
+                className="secondary"
+                onClick={handleFirstFlashGuide}
+                disabled={uploading || compiling}
+                title="Chỉ cần làm một lần cho mỗi mạch: nạp firmware thông dịch"
+              >
+                📥 Firmware lần đầu
+              </button>
+              <button
+                className="primary"
+                onClick={handleQuickUpload}
+                disabled={uploading || compiling}
+                title="Nạp trực tiếp từ trình duyệt qua cổng USB/COM, không cần biên dịch hay máy chủ"
+              >
+                {uploading ? "⏳ Đang nạp..." : "⚡ Nạp nhanh"}
+              </button>
+            </>
+          )}
+
           <button
-            className="primary"
+            className={quickUploadSupported ? "secondary" : "primary"}
             onClick={handleCompileAndUpload}
             disabled={uploading || compiling || codeLanguage === "python"}
             title={codeLanguage === "python" ? "Mã Python: xuất .py rồi nạp bằng Thonny / mpremote" : undefined}

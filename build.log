@@ -1,0 +1,20 @@
+﻿
+=== Blue Pill ===
+node : Multiple libraries were found for "Servo.h"
+At line:1 char:1
++ node firmware/build.mjs blue-pill 2>&1 | Out-File build.log -Encoding ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Multiple librar...d for "Servo.h":String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Used: C:\Users\LENOVO\AppData\Local\Arduino15\packages\STMicroelectronics\hardware\stm32\3.1.0\libraries\Servo
+  Not used: C:\Users\LENOVO\Documents\Arduino\libraries\Servo
+
+[92mUsed library[0m [92mVersion[0m [90mPath[0m
+[93mServo[0m        1.1.2   [90mC:\Users\LENOVO\AppData\Local\Arduino15\packages\STMicroelectronics\hardware\stm32\3.1.0\libraries\Servo[0m
+[93mSrcWrapper[0m   1.0.1   [90mC:\Users\LENOVO\AppData\Local\Arduino15\packages\STMicroelectronics\hardware\stm32\3.1.0\libraries\SrcWrapper[0m
+
+[92mUsed platform[0m            [92mVersion[0m [90mPath[0m
+[93mSTMicroelectronics:stm32[0m 3.1.0   [90mC:\Users\LENOVO\AppData\Local\Arduino15\packages\STMicroelectronics\hardware\stm32\3.1.0[0m
+Error during build: fork/exec C:\Users\LENOVO\AppData\Local\Arduino15\packages\STMicroelectronics\tools\xpack-arm-none-
+eabi-gcc\14.2.1-1.1/bin/arm-none-eabi-gcc.exe: An Application Control policy has blocked this file.

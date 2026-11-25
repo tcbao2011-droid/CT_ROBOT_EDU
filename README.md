@@ -118,3 +118,38 @@ Thư mục `node_modules` không được đóng gói trong bản phát hành; c
 - Nút **Biên dịch & Nạp** gọi `/api/upload`; Arduino CLI sẽ biên dịch lại rồi nạp vào cổng serial đã chọn/tự nhận diện.
 - Các API trên là middleware của Vite development server. Khi chạy `npm run preview` hoặc đóng gói bản production, cần triển khai một local backend tương đương nếu muốn dùng hai thao tác này.
 - Lệnh kiểm thử mã nguồn: `npm test`. Lệnh build giao diện: `npm run build`.
+
+## Đưa lên Netlify và vẫn nạp được vào mạch
+
+Netlify chỉ chứa giao diện web (build: `npm run build`, thư mục `dist`, đã có `netlify.toml`). Biên dịch và nạp mạch
+(Blue Pill, Black Pill, Nucleo-F401RE, ESP32, Arduino) cần `arduino-cli` và cổng USB nên phải chạy trên máy đang cắm mạch,
+qua **cầu nối cục bộ**:
+
+1. Cài Node.js 20.19+ và `arduino-cli` + core cần dùng (ví dụ `arduino-cli core install STMicroelectronics:stm32`; STM32 qua ST-LINK cần STM32CubeProgrammer).
+2. Chạy `CHAY_CAU_NOI.bat` (Windows) hoặc `./CHAY_CAU_NOI.sh` (macOS/Linux), giữ cửa sổ mở.
+3. Mở trang Netlify bằng Chrome/Edge, bấm "Biên dịch & Nạp". Web tự tìm cầu nối tại `http://127.0.0.1:8765`.
+
+Tên miền Netlify tùy chỉnh (không phải `*.netlify.app`) cần khai báo: `CT_ALLOWED_ORIGINS=https://ten-mien-cua-ban node server/bridge.js`.
+Đổi cổng bằng `CT_BRIDGE_PORT`. Khi dùng `npm run dev`, không cần cầu nối.
+
+## ⚡ Nạp nhanh cho STM32 (chạy hẳn trên web, không cần biên dịch hay máy chủ)
+
+Với Blue Pill / Black Pill / Nucleo-F401RE, nút **⚡ Nạp nhanh** dịch khối Blockly thành *bytecode* ngay trong trình duyệt
+rồi nạp qua **Web Serial** (Chrome/Edge, trang https như Netlify) vào flash của mạch. Chương trình được lưu trong flash nên
+robot **chạy độc lập** và tự chạy lại mỗi khi bật nguồn. Mỗi mạch chỉ cần nạp **một lần** firmware thông dịch (nút
+**📥 Firmware lần đầu** hiện hướng dẫn riêng từng mạch).
+
+- Bản V1 hỗ trợ: sự kiện/điều khiển (bắt đầu, lặp mãi, lặp N lần, đếm, nếu/nếu không, trong khi, lặp cho đến khi, chờ đến khi,
+  thoát/bỏ qua), logic, toán, biến, thời gian và toàn bộ khối riêng của mạch (LED, nút, còi, servo, HC-SR04, dò line,
+  GPIO/ADC/PWM, Bluetooth). Chưa hỗ trợ: khối Chữ, Danh sách, phát/nhận thông điệp (báo lỗi rõ khối nào).
+- Mọi giá trị là số thực 32 bit; chia cho 0 cho kết quả 0.
+- Dung lượng chương trình: Blue Pill 4080 byte, Black Pill / Nucleo 16384 byte.
+
+**Người triển khai (làm một lần):** cài `arduino-cli` + core STM32 rồi chạy `npm run firmware:build`
+(hoặc `node firmware/build.mjs blue-pill`). Lệnh tạo `public/firmware/<mạch>.bin`; đưa lên Netlify cùng trang web để người dùng tải.
+Chân của firmware được sinh tự động từ khai báo mạch (`firmware/stage.mjs`), nên luôn khớp với khối.
+
+**Cổng kết nối với web:** Blue Pill dùng USART1 (PA9/PA10) qua cáp USB-TTL; Black Pill dùng USB (CDC); Nucleo dùng cổng ảo ST-LINK.
+
+Kiểm thử: `node --test` chạy bytecode do JS sinh ra bằng chính bộ thông dịch C++ của firmware (biên dịch bằng g++ trên máy tính)
+và kiểm thử giao thức nạp đầu-cuối. Phần điều khiển phần cứng thật (`firmware/common/ct_stm32_main.h`) chưa thử trên mạch.

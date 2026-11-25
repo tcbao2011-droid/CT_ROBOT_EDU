@@ -1,15 +1,17 @@
 import { readBuildResponse } from "./compiler.js";
+import { resolveApiBase } from "./apiBase.js";
 
 async function postNdjson(url, payload, onLog, { requireArtifact = false } = {}) {
+  const base = await resolveApiBase();
   let response;
   try {
-    response = await fetch(url, {
+    response = await fetch(`${base}${url}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
   } catch (_) {
-    throw new Error("Không kết nối được máy chủ. Hãy chạy `npm run dev`.");
+    throw new Error("Không kết nối được máy chủ. Hãy chạy lại cầu nối (CHAY_CAU_NOI) hoặc `npm run dev`.");
   }
   return readBuildResponse(response, onLog, { requireArtifact });
 }
